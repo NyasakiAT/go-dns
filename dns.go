@@ -144,15 +144,12 @@ func main() {
 	fmt.Println("Starting DNS")
 
 	server, err := net.ResolveUDPAddr("udp4", ":53")
-	client, err := net.ResolveUDPAddr("udp4", "9.9.9.9:53")
-
 	if err != nil {
 		fmt.Println("Error resolving address: ", err)
 		return
 	}
 
 	s_conn, err := net.ListenUDP("udp4", server)
-	c_conn, err := net.DialUDP("udp4", nil, client)
 	if err != nil {
 		fmt.Println("Error listening on UDP: ", err)
 		return
@@ -180,6 +177,9 @@ func main() {
 		
 		// Start gorouttine for answeing so we dont block
 		go func(q []byte, client *net.UDPAddr) {
+			// Create client here so every routine gets it own reply
+			client, err := net.ResolveUDPAddr("udp4", "9.9.9.9:53")
+			c_conn, err := net.DialUDP("udp4", nil, client)
 
 			// Set deadline for sending request and send request
 			c_conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
@@ -197,23 +197,19 @@ func main() {
 				return
 			}
 
-			ans_header, err := ParseHeader(ans[:n])
-			ans_name, _, _ := ParseName(ans[:n], 12)
+			ans_header, err := ParseHeader(ans[:n2])
+			ans_name, _, _ := ParseName(ans[:n2], 12)
 
 			fmt.Println("ANS: ", ans_header)
 			fmt.Println("ANS: ", ans_name)
 
 			//Reply to the original client
 			_, _ = s_conn.WriteToUDP(ans[:n2], client)
+			c_conn.Close()
     	}(q, c_addr)
 
 		if err != nil {
 			fmt.Println("Errror receiving: ", err)
-		}
-
-		if strings.TrimSpace(string(buffer[0:n])) == "STOP" {
-			fmt.Println("Exiting UDP server!")
-			return
 		}
 	}
 }
