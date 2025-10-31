@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 )
 
+// Struct for DNS packet header
 type DNSHeader struct {
 	ID                                 uint16
 	QR                                 bool  // query(0)/response(1)
@@ -17,9 +19,10 @@ type DNSHeader struct {
 	QDCount, ANCount, NSCount, ARCount uint16
 }
 
+// Parses the header section of the packet
 func ParseHeader(b []byte) (DNSHeader, error) {
 	if len(b) < 12 {
-		return DNSHeader{}, fmt.Errorf("Packet too short: %d < 12", len(b))
+		return DNSHeader{}, fmt.Errorf("packet too short: %d < 12", len(b))
 	}
 
 	header := DNSHeader{}
@@ -44,6 +47,7 @@ func ParseHeader(b []byte) (DNSHeader, error) {
 	return header, nil
 }
 
+// Build the header packet from the DNSHeader struct
 func BuildHeader(header DNSHeader) []byte {
 	flags := uint16(0)
 	if header.QR {
@@ -75,62 +79,136 @@ func BuildHeader(header DNSHeader) []byte {
 	return out
 }
 
-func ParseName(msg []byte, off int) (string, int, error){
-var name string
-    for {
-        if off >= len(msg) {
-            return "", 0, fmt.Errorf("out of bounds")
-        }
+func ParseName(msg []byte, off int) (string, int, error) {
+	var labels []string
+	start := off
+	jumped := false
 
-        length := int(msg[off])
-        off++
+	for {
+		if off >= len(msg) {
+			return "", 0, fmt.Errorf("out of bounds")
+		}
 
-        if length == 0 { // end of name
-            break
-        }
+		length := msg[off]
 
-        if off+length > len(msg) {
-            return "", 0, fmt.Errorf("bad length")
-        }
+		// Name is a pointer
+		if length&0xC0 == 0xC0 {
+			if off+1 >= len(msg) {
+				return "", 0, fmt.Errorf("truncated pointer")
+			}
 
-        if len(name) > 0 {
-            name += "."
-        }
-        name += string(msg[off : off+length])
-        off += length
-    }
-    return name, off, nil
+			// read 14-bit offset (first 2 bits are pointer indicator)
+			pointer := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
+
+			// move to pointer target
+			off = pointer
+
+			// mark that we followed a pointer
+			if !jumped {
+				// original message continues after the pointer
+				start += 2 
+				jumped = true
+			}
+			continue
+		}
+
+		off++
+		
+		// end of name
+		if length == 0 { 
+			break
+		}
+
+		if off+int(length) > len(msg) {
+			return "", 0, fmt.Errorf("label length overflow")
+		}
+
+		// Append to labels array for later joining
+		labels = append(labels, string(msg[off:off+int(length)]))
+		off += int(length)
+	}
+
+	// Joins labels with .
+	name := strings.Join(labels, ".")
+
+	// No pointer, just continue reading normally
+	if !jumped {
+		return name, off, nil
+	}
+
+	// Continue reading after pointer
+	return name, start, nil
 }
 
 func main() {
 	fmt.Println("Starting DNS")
 
 	server, err := net.ResolveUDPAddr("udp4", ":53")
+	client, err := net.ResolveUDPAddr("udp4", "9.9.9.9:53")
+
 	if err != nil {
-		fmt.Errorf("Error resolving address: %q", err)
+		fmt.Println("Error resolving address: ", err)
 		return
 	}
 
-	connection, err := net.ListenUDP("udp4", server)
+	s_conn, err := net.ListenUDP("udp4", server)
+	c_conn, err := net.DialUDP("udp4", nil, client)
 	if err != nil {
-		fmt.Errorf("Error listening on UDP: %q", err)
+		fmt.Println("Error listening on UDP: ", err)
 		return
 	}
 
-	defer connection.Close()
+	defer s_conn.Close()
 
-	buffer := make([]byte, 32)
+	buffer := make([]byte, 4096)
 	for {
-		n, _, err := connection.ReadFromUDP(buffer)
+
+		// Start reading from server socket
+		n, c_addr, err := s_conn.ReadFromUDP(buffer)
+		if err != nil { continue }
 
 		header, err := ParseHeader(buffer[:n])
 		name, _, _ := ParseName(buffer[:n], 12)
 
-		fmt.Println(header)
-		fmt.Println(name)
+		fmt.Println("REQ: ", header)
+		fmt.Println("REQ: ", name)
+
+		//TODO: Check cache
+
+		q := make([]byte, n)
+    	copy(q, buffer[:n])
+		
+		// Start gorouttine for answeing so we dont block
+		go func(q []byte, client *net.UDPAddr) {
+
+			// Set deadline for sending request and send request
+			c_conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+			if _, err := c_conn.Write(q); err != nil{
+				return
+			}
+
+			ans := make([]byte, 4096)
+
+			// Set read deadline and read answer
+			_ = c_conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+			n2, _, err := c_conn.ReadFromUDP(ans)
+			if err != nil {
+				//TODO: Send SERVFAIL here
+				return
+			}
+
+			ans_header, err := ParseHeader(ans[:n])
+			ans_name, _, _ := ParseName(ans[:n], 12)
+
+			fmt.Println("ANS: ", ans_header)
+			fmt.Println("ANS: ", ans_name)
+
+			//Reply to the original client
+			_, _ = s_conn.WriteToUDP(ans[:n2], client)
+    	}(q, c_addr)
 
 		if err != nil {
-			fmt.Errorf("Errror receiving: %q", err)
+			fmt.Println("Errror receiving: ", err)
 		}
 
 		if strings.TrimSpace(string(buffer[0:n])) == "STOP" {
