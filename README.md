@@ -75,7 +75,6 @@ Designed for learning how DNS works at the packet level — parsing headers, han
 ```
 REQ:  ping.archlinux.org
 REQ:  {13722 false 0 false false true false 0 0 1 0 0 0}
-REQ:  ping.archlinux.org
 ANS:  {49285 true 0 false false true true 0 0 1 2 0 0}
 ANS:  ping.archlinux.org
 ```
