@@ -66,7 +66,7 @@ func main() {
 			}
 
 			answer, _ := dns.ParseAnswerPacket(ans[:n2], n2)
-			fmt.Println("A: ", len(answer.Answers))
+			fmt.Println("A: Questions:", len(answer.Questions), " Answers:", len(answer.Answers))
 
 			_, _ = s_conn.WriteToUDP(ans[:n2], client)
 			c_conn.Close()
