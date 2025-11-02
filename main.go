@@ -33,11 +33,10 @@ func main() {
 			continue
 		}
 
-		header, err := dns.ParseHeader(buffer[:n])
-		name, _, _ := dns.ParseName(buffer[:n], 12)
+		question, _ := dns.ParseQuestionPacket(buffer[:n], n)
 
-		fmt.Println("REQ: ", header)
-		fmt.Println("REQ: ", name)
+		fmt.Println("Q: ", question.Question.Name)
+		fmt.Println("Q: ", question.Question.Type)
 
 		//TODO: Check cache
 
@@ -66,13 +65,9 @@ func main() {
 				return
 			}
 
-			ans_header, err := dns.ParseHeader(ans[:n2])
-			ans_name, _, _ := dns.ParseName(ans[:n2], 12)
+			answer, _ := dns.ParseAnswerPacket(ans[:n2], n2)
+			fmt.Println("A: ", len(answer.Answers))
 
-			fmt.Println("ANS: ", ans_header)
-			fmt.Println("ANS: ", ans_name)
-
-			//Reply to the original client
 			_, _ = s_conn.WriteToUDP(ans[:n2], client)
 			c_conn.Close()
 		}(q, c_addr)

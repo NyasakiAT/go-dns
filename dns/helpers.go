@@ -2,8 +2,8 @@ package dns
 
 import (
 	"encoding/binary"
-	"strings"
 	"fmt"
+	"strings"
 )
 
 func ParseName(msg []byte, off int) (string, int, error) {
@@ -12,10 +12,6 @@ func ParseName(msg []byte, off int) (string, int, error) {
 	jumped := false
 
 	for {
-		if off >= len(msg) {
-			return "", 0, fmt.Errorf("out of bounds")
-		}
-
 		length := msg[off]
 
 		// Name is a pointer
