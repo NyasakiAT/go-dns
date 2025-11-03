@@ -82,7 +82,7 @@ ANS:  ping.archlinux.org
 ---
 
 ## 🧩 Documentation Used
-[golang-lru](https://github.com/hashicorp/golang-lru)
+[ristretto](https://github.com/dgraph-io/ristretto)
 [Simple DNS Client by Alan Mislove](https://mislove.org/teaching/cs4700/spring11/handouts/project1-primer.pdf)
 [Create a TCP and UDP Client and Server using Go](https://www.linode.com/docs/guides/developing-udp-and-tcp-clients-and-servers-in-go/)
 [(Video) Bitwise Operators by Alex Hyett](https://www.youtube.com/watch?v=igIjGxF2J-w)
