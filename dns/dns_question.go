@@ -22,12 +22,12 @@ func ParseQuestionPacket(b []byte, n int) (DNSQuestionPacket, error) {
 
 	header, h_err := ParseHeader(msg)
 	if h_err != nil {
-		fmt.Println("enountered error while parsing header: ", h_err)
+		return q_pkt, fmt.Errorf("enountered error while parsing header: %d", h_err)
 	}
 
-	question, _, q_err := ParseQuestion(msg, 12)
+	question, _, q_err := ParseQuestion(msg, DNSHeaderSize)
 	if q_err != nil {
-		fmt.Println("enountered error while parsing question: ", h_err)
+		return q_pkt, fmt.Errorf("enountered error while parsing question: %d", h_err)
 	}
 
 	q_pkt.Header = header
@@ -58,9 +58,16 @@ func ParseQuestion(b []byte, start int) (DNSQuestion, int, error) {
 	return question, off + 4, nil
 }
 
-func BuildQuestion(header DNSQuestion) []byte {
+func BuildQuestion(pkt []byte, header DNSQuestion, names map[string]int) ([]byte, error) {
 
-	fmt.Println("TODO BUILD")
+	/*
+		if name in names:
+			pkt.append(11+names[name])
+		else
+			ref = len(pkt)
+			names[name] = ref
+			pkt.append(BuildLabel(name))
+	*/
 
-	return nil
+	return pkt, nil
 }

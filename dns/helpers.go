@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const DNSHeaderSize = 12
+
 func ParseName(msg []byte, off int) (string, int, error) {
 	var labels []string
 	start := off
@@ -61,4 +63,15 @@ func ParseName(msg []byte, off int) (string, int, error) {
 
 	// Continue reading after pointer
 	return name, start, nil
+}
+
+func BuildName(name string) []byte{
+	data := make([]byte, 0, 4096)
+
+	slices := strings.Split(name, ".")
+	for i := 0; i < len(slices); i++ {
+		data.append(data, len(slices[i])+slices[i])
+	}
+
+	return data
 }

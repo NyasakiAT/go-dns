@@ -26,32 +26,34 @@ func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
 
 	header, h_err := ParseHeader(msg)
 	if h_err != nil {
-		fmt.Println("enountered error while parsing header: ", h_err)
+		return q_pkt, fmt.Errorf("enountered error while parsing header: %d", h_err)
 	}
 
-	off := 12
+	off := DNSHeaderSize
 	questions := make([]DNSQuestion, 0, header.QDCount)
+
 	for i := 0; i < int(header.QDCount); i++ {
-		question, q_off, q_err := ParseQuestion(msg, off)
+		q, q_off, q_err := ParseQuestion(msg, off)
 		if q_err != nil {
-			fmt.Println("enountered error while parsing question: ", q_err)
+			return q_pkt, fmt.Errorf("enountered error while parsing question: %d", q_err)
 		}
-		questions = append(questions, question)
+		questions = append(questions, q)
 		off = q_off
 	}
 
 	answers := make([]DNSAnswer, 0, header.ANCount)
+
 	for i := 0; i < int(header.ANCount); i++ {
-		answer, a_off, a_err := ParseAnswer(msg, off)
+		a, a_off, a_err := ParseAnswer(msg, off)
 		if a_err != nil {
-			fmt.Println("enountered error while parsing answer: ", a_err)
+			return q_pkt, fmt.Errorf("enountered error while parsing answer: %d", a_err)
 		}
-		answers = append(answers, answer)
+		answers = append(answers, a)
 		off = a_off
 	}
 
 	if int(header.ANCount) != len(answers) {
-		fmt.Println("Answer lengths dont match")
+		return q_pkt, fmt.Errorf("answer lengths dont match")
 	}
 
 	q_pkt.Header = header
@@ -66,7 +68,7 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 
 	name, off, err := ParseName(b, start)
 	if err != nil {
-		return answer, 0, fmt.Errorf("error parsing name")
+		return answer, 0, fmt.Errorf("error parsing name %d", err)
 	}
 	answer.Name = name
 
@@ -89,9 +91,40 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 	return answer, rdataEnd, nil
 }
 
-func BuildAnswer(header DNSAnswer) []byte {
+func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, error) {
 
-	fmt.Println("TODO BUILD")
+	// Check if it can be decoded
+	_, _, err := ParseAnswer(pkt, 0)
+	if err != nil {
+		return pkt, fmt.Errorf("packet check failed: %d", err)
+	}
 
-	return nil
+	return pkt
+}
+
+func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
+	pkt := make([]byte, 0, 4096)
+	compression_values := make(map[string]int)
+
+	header := BuildHeader(a_pkt.Header)
+	pkt = append(pkt, header...)
+
+	for i := 0; i < len(a_pkt.Questions); i++ {
+		q, err := BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
+		fmt.Println("error while building answer packet, could not build question: ", err)
+		pkt = append(pkt, q...)
+	}
+
+	for i := 0; i < len(a_pkt.Answers); i++ {
+		a, err := BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
+		fmt.Println("error while building answer packet, could not build answer: ", err)
+		pkt = append(pkt, a...)
+	}
+
+	_, err := ParseAnswerPacket(pkt, 0)
+	if err != nil {
+		return pkt, fmt.Errorf("packet check failed: %d", err)
+	}
+
+	return pkt, nil
 }

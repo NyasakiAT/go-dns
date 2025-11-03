@@ -18,14 +18,13 @@ type DNSHeader struct {
 
 // Parses the header section of the packet
 func ParseHeader(b []byte) (DNSHeader, error) {
-	if len(b) < 12 {
+	if len(b) < DNSHeaderSize {
 		return DNSHeader{}, fmt.Errorf("packet too short: %d < 12", len(b))
 	}
 
 	header := DNSHeader{}
 
 	header.ID = binary.BigEndian.Uint16(b[0:2])
-
 	flags := binary.BigEndian.Uint16(b[2:4])
 
 	header.QR = ((flags >> 15) & 1) == 1
@@ -41,12 +40,14 @@ func ParseHeader(b []byte) (DNSHeader, error) {
 	header.ANCount = binary.BigEndian.Uint16(b[6:8])
 	header.NSCount = binary.BigEndian.Uint16(b[8:10])
 	header.ARCount = binary.BigEndian.Uint16(b[10:12])
+
 	return header, nil
 }
 
 // Build the header packet from the DNSHeader struct
 func BuildHeader(header DNSHeader) []byte {
 	flags := uint16(0)
+	
 	if header.QR {
 		flags |= 1 << 15
 	}
@@ -63,15 +64,17 @@ func BuildHeader(header DNSHeader) []byte {
 	if header.RA {
 		flags |= 1 << 7
 	}
+	
 	flags |= (uint16(header.Z) & 7) << 4
 	flags |= uint16(header.RCode) & 15
 
-	out := make([]byte, 12)
+	out := make([]byte, DNSHeaderSize)
 	binary.BigEndian.PutUint16(out[0:2], header.ID)
 	binary.BigEndian.PutUint16(out[2:4], flags)
 	binary.BigEndian.PutUint16(out[4:6], header.QDCount)
 	binary.BigEndian.PutUint16(out[6:8], header.ANCount)
 	binary.BigEndian.PutUint16(out[8:10], header.NSCount)
 	binary.BigEndian.PutUint16(out[10:12], header.ARCount)
+	
 	return out
 }
