@@ -3,6 +3,7 @@ package dns
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 type DNSQuestionPacket struct {
@@ -58,16 +59,15 @@ func ParseQuestion(b []byte, start int) (DNSQuestion, int, error) {
 	return question, off + 4, nil
 }
 
-func BuildQuestion(pkt []byte, header DNSQuestion, names map[string]int) ([]byte, error) {
+func BuildQuestion(pkt []byte, q DNSQuestion, names map[string]int) ([]byte, map[string]int, error) {
 
-	/*
-		if name in names:
-			pkt.append(11+names[name])
-		else
-			ref = len(pkt)
-			names[name] = ref
-			pkt.append(BuildLabel(name))
-	*/
+	pkt, names, _ = BuildNameCompressed(pkt, q.Name, names)
 
-	return pkt, nil
+	qtype := []byte{byte(q.Type >> 8), byte(q.Type)}
+	pkt = append(pkt, qtype...)
+
+	qclass := []byte{byte(q.Class >> 8), byte(q.Class)}
+	pkt = append(pkt, qclass...)
+
+	return pkt, names, nil
 }

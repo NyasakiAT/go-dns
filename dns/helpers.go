@@ -65,13 +65,51 @@ func ParseName(msg []byte, off int) (string, int, error) {
 	return name, start, nil
 }
 
-func BuildName(name string) []byte{
-	data := make([]byte, 0, 4096)
-
-	slices := strings.Split(name, ".")
-	for i := 0; i < len(slices); i++ {
-		data.append(data, len(slices[i])+slices[i])
+func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte, map[string]int, int) {
+	name = strings.TrimSuffix(name, ".")
+	if name == "" {
+		start := len(pkt)
+		pkt = append(pkt, 0)
+		return pkt, names, start
 	}
 
-	return data
+	labels := strings.Split(name, ".")
+
+	cut := len(labels)
+	ptrOff := -1
+	for i := 0; i < len(labels); i++ {
+		suf := strings.Join(labels[i:], ".")
+		if off, ok := names[suf]; ok {
+			cut = i
+			ptrOff = off
+			break
+		}
+	}
+
+	start := len(pkt)
+
+	for i := 0; i < cut; i++ {
+		suf := strings.Join(labels[i:], ".")
+		if _, ok := names[suf]; !ok {
+			names[suf] = len(pkt)
+		}
+		lab := labels[i]
+		pkt = append(pkt, byte(len(lab)))
+		pkt = append(pkt, lab...)
+	}
+
+	if cut == len(labels) {
+		// wrote full name, terminate
+		pkt = append(pkt, 0)
+	} else {
+		// emit single pointer; NO 0x00 before a pointer
+		p := 0xC000 | ptrOff
+		pkt = append(pkt, byte(p>>8), byte(p))
+	}
+
+	if _, ok := names[name]; !ok {
+		names[name] = start
+	}
+	
+	return pkt, names, start
 }
