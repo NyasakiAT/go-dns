@@ -12,9 +12,12 @@ func ParseName(msg []byte, off int) (string, int, error) {
 	var labels []string
 	start := off
 	jumped := false
-
+	
+	if off >= len(msg) { return "", 0, fmt.Errorf("oob") }
+	
 	for {
 		length := msg[off]
+		
 
 		// Name is a pointer
 		if length&0xC0 == 0xC0 {

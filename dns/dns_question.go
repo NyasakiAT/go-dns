@@ -22,12 +22,12 @@ func ParseQuestionPacket(b []byte, n int) (DNSQuestionPacket, error) {
 
 	header, h_err := ParseHeader(msg)
 	if h_err != nil {
-		return q_pkt, fmt.Errorf("enountered error while parsing header: %d", h_err)
+		return q_pkt, fmt.Errorf("enountered error while parsing header: %v", h_err)
 	}
 
 	question, _, q_err := ParseQuestion(msg, DNSHeaderSize)
 	if q_err != nil {
-		return q_pkt, fmt.Errorf("enountered error while parsing question: %d", h_err)
+		return q_pkt, fmt.Errorf("enountered error while parsing question: %v", h_err)
 	}
 
 	q_pkt.Header = header
