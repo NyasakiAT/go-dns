@@ -91,15 +91,15 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 	return answer, rdataEnd, nil
 }
 
-func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, error) {
+func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[string]int, error) {
 
 	// Check if it can be decoded
 	_, _, err := ParseAnswer(pkt, 0)
 	if err != nil {
-		return pkt, fmt.Errorf("packet check failed: %d", err)
+		return pkt, names, fmt.Errorf("packet check failed: %d", err)
 	}
 
-	return pkt
+	return pkt, names, nil
 }
 
 func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
@@ -110,13 +110,15 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 	pkt = append(pkt, header...)
 
 	for i := 0; i < len(a_pkt.Questions); i++ {
-		q, err := BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
+		q, lbls, err := BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
+		compression_values = lbls
 		fmt.Println("error while building answer packet, could not build question: ", err)
 		pkt = append(pkt, q...)
 	}
 
 	for i := 0; i < len(a_pkt.Answers); i++ {
-		a, err := BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
+		a, lbls, err := BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
+		compression_values = lbls
 		fmt.Println("error while building answer packet, could not build answer: ", err)
 		pkt = append(pkt, a...)
 	}

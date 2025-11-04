@@ -3,7 +3,6 @@ package dns
 import (
 	"encoding/binary"
 	"fmt"
-	"strings"
 )
 
 type DNSQuestionPacket struct {
