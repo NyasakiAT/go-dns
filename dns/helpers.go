@@ -12,17 +12,21 @@ func ParseName(msg []byte, off int) (string, int, error) {
 	var labels []string
 	start := off
 	jumped := false
-	
-	if off >= len(msg) { return "", 0, fmt.Errorf("oob") }
-	
+
 	for {
+		if off >= len(msg) {
+			return "", 0, fmt.Errorf("oob")
+		}
 		length := msg[off]
-		
 
 		// Name is a pointer
 		if length&0xC0 == 0xC0 {
 			if off+1 >= len(msg) {
 				return "", 0, fmt.Errorf("truncated pointer")
+			}
+			ptr := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
+			if ptr >= len(msg) {
+				return "", 0, fmt.Errorf("bad ptr %d", ptr)
 			}
 
 			// read 14-bit offset (first 2 bits are pointer indicator)
@@ -69,6 +73,8 @@ func ParseName(msg []byte, off int) (string, int, error) {
 }
 
 func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte, map[string]int, int) {
+	//fmt.Println("Got map: ", names)
+
 	name = strings.TrimSuffix(name, ".")
 	if name == "" {
 		start := len(pkt)
@@ -94,6 +100,7 @@ func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte,
 	for i := 0; i < cut; i++ {
 		suf := strings.Join(labels[i:], ".")
 		if _, ok := names[suf]; !ok {
+			fmt.Println("label: ", suf, " offset: ", len(pkt))
 			names[suf] = len(pkt)
 		}
 		lab := labels[i]
@@ -113,6 +120,6 @@ func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte,
 	if _, ok := names[name]; !ok {
 		names[name] = start
 	}
-	
+
 	return pkt, names, start
 }

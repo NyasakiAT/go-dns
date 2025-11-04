@@ -33,7 +33,10 @@ func main() {
 			continue
 		}
 
-		question, _ := dns.ParseQuestionPacket(buffer[:n], n)
+		question, err := dns.ParseQuestionPacket(buffer[:n], n)
+		if err != nil{
+			fmt.Println("error parsing question from client: ", err)
+		}
 
 		fmt.Println("Q: ", question.Question.Name)
 
@@ -65,8 +68,13 @@ func main() {
 			}
 			
 			c_conn.Close()
-			answer, _ := dns.ParseAnswerPacket(ans[:n2], n2)
+			answer, err := dns.ParseAnswerPacket(ans[:n2], n2)
+			if err != nil{
+				fmt.Println("error parsing answer from client: ", err)
+			}
+			
 			dns.BuildAnswerPaket(answer)
+			
 			fmt.Println("A: Questions:", len(answer.Questions), " Answers:", len(answer.Answers))
 
 			_, _ = s_conn.WriteToUDP(ans[:n2], addr)
