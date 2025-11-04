@@ -24,23 +24,24 @@ func ParseName(msg []byte, off int) (string, int, error) {
 			if off+1 >= len(msg) {
 				return "", 0, fmt.Errorf("truncated pointer")
 			}
-			ptr := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
-			if ptr >= len(msg) {
-				return "", 0, fmt.Errorf("bad ptr %d", ptr)
+			pointer := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
+			if pointer >= len(msg) {
+				return "", 0, fmt.Errorf("bad ptr %d", pointer)
 			}
 
-			// read 14-bit offset (first 2 bits are pointer indicator)
-			pointer := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
-
-			// move to pointer target
-			off = pointer
-
-			// mark that we followed a pointer
 			if !jumped {
 				// original message continues after the pointer
 				start += 2
 				jumped = true
 			}
+			// read 14-bit offset (first 2 bits are pointer indicator)
+			//pointer := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
+
+			// move to pointer target
+			off = pointer
+
+			// mark that we followed a pointer
+			
 			continue
 		}
 
