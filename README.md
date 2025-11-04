@@ -5,6 +5,7 @@ It listens for DNS queries, forwards them to an upstream resolver (e.g. `9.9.9.9
 
 Designed for learning how DNS works at the packet level — parsing headers, handling compression pointers, and building real network logic from scratch.
 
+[![Go](https://github.com/NyasakiAT/go-dns/actions/workflows/go.yml/badge.svg)](https://github.com/NyasakiAT/go-dns/actions/workflows/go.yml)
 ---
 
 ## 🚀 Features
