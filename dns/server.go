@@ -3,6 +3,7 @@ package dns
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -68,7 +69,7 @@ func ProcessQuestion(q []byte, connection *net.UDPConn, cAddr *net.UDPAddr) {
 	// DEBUG ---
 	BuildAnswerPacket(answer)
 
-	log.Debug().Msg("A: Questions:" + string(len(answer.Questions)) + " Answers:" + string(len(answer.Answers)))
+	log.Debug().Msg("A: Questions:" + strconv.Itoa(len(answer.Questions)) + " Answers:" + strconv.Itoa(len(answer.Answers)))
 	// ---
 
 	_, err = connection.WriteToUDP(ans[:n2], cAddr)
