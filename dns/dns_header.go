@@ -18,6 +18,7 @@ type DNSHeader struct {
 
 // Parses the header section of the packet
 func ParseHeader(b []byte) (DNSHeader, error) {
+
 	if len(b) < DNSHeaderSize {
 		return DNSHeader{}, fmt.Errorf("packet too short: %d < 12", len(b))
 	}
