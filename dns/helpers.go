@@ -31,7 +31,7 @@ func ParseName(msg []byte, off int) (string, int, error) {
 
 			if !jumped {
 				// original message continues after the pointer
-				start += 2
+				start = off +2
 				jumped = true
 			}
 			// read 14-bit offset (first 2 bits are pointer indicator)
