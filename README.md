@@ -71,17 +71,6 @@ Designed for learning how DNS works at the packet level — parsing headers, han
 
 ---
 
-## 🧩 Example Output
-
-```
-REQ:  ping.archlinux.org
-REQ:  {13722 false 0 false false true false 0 0 1 0 0 0}
-ANS:  {49285 true 0 false false true true 0 0 1 2 0 0}
-ANS:  ping.archlinux.org
-```
-
----
-
 ## 🧩 Documentation Used
 [ristretto](https://github.com/dgraph-io/ristretto)
 [Simple DNS Client by Alan Mislove](https://mislove.org/teaching/cs4700/spring11/handouts/project1-primer.pdf)

@@ -73,9 +73,9 @@ func main() {
 				fmt.Println("error parsing answer from client: ", err)
 			}
 			
-			//fmt.Println("Upstream: ", ans[:n2])
-			//debug, _ := dns.BuildAnswerPaket(answer)
-			//fmt.Println("Own: ", debug)
+			fmt.Println("Upstream: ", ans[:n2])
+			debug, _ := dns.BuildAnswerPaket(answer)
+			fmt.Println("Own: ", debug)
 			
 			fmt.Println("A: Questions:", len(answer.Questions), " Answers:", len(answer.Answers))
 

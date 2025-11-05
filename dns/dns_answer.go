@@ -110,6 +110,10 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[str
 
 	switch a.Type {
 	case 2, 5, 12, 15, 33, 6: // NS, CNAME, PTR, MX, SRV, SOA
+
+		// Roll back
+		pkt = pkt[:ansStart]
+
 		return pkt, names, fmt.Errorf("name-bearing RDATA not supported yet")
 	}
 	pkt = append(pkt, a.RData...)
@@ -117,6 +121,10 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[str
 	// Check if it can be decoded
 	_, _, err := ParseAnswer(pkt, ansStart)
 	if err != nil {
+
+		// Roll back
+		pkt = pkt[:ansStart]
+
 		return pkt, names, fmt.Errorf("packet check failed: %v", err)
 	}
 
@@ -124,12 +132,11 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[str
 }
 
 func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
-	pkt := make([]byte, 0, 4096)
+
+	// Reserve 12 for the header
+	pkt := make([]byte, 12, 4096)
 	compression_values := make(map[string]int)
 	var err error
-
-	header := BuildHeader(a_pkt.Header)
-	pkt = append(pkt, header...)
 
 	for i := 0; i < len(a_pkt.Questions); i++ {
 		pkt, compression_values, err = BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
@@ -138,10 +145,13 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 		}
 	}
 
+	anCount := 0
 	for i := 0; i < len(a_pkt.Answers); i++ {
 		pkt, compression_values, err = BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
 		if err != nil {
 			fmt.Println("error while building answer packet, could not build answer: ", err)
+		}else{
+			anCount++
 		}
 	}
 
@@ -149,6 +159,11 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 	if err2 != nil {
 		return pkt, fmt.Errorf("packet check failed: %v", err)
 	}
+
+	h := a_pkt.Header
+	h.ANCount = uint16(anCount)
+	header := BuildHeader(h)
+	copy(pkt[:12], header)
 
 	return pkt, nil
 }
