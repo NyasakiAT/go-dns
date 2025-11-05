@@ -101,7 +101,7 @@ func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte,
 	for i := 0; i < cut; i++ {
 		suf := strings.Join(labels[i:], ".")
 		if _, ok := names[suf]; !ok {
-			fmt.Println("label: ", suf, " offset: ", len(pkt))
+			//fmt.Println("label: ", suf, " offset: ", len(pkt))
 			names[suf] = len(pkt)
 		}
 		lab := labels[i]

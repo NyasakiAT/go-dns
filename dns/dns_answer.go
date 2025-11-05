@@ -60,8 +60,6 @@ func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
 	q_pkt.Questions = questions
 	q_pkt.Answers = answers
 
-	fmt.Println("Answer Packet: ", q_pkt)
-
 	return q_pkt, nil
 }
 
@@ -74,11 +72,15 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 	}
 	answer.Name = name
 
-	answer.Type = binary.BigEndian.Uint16(b[off : off+2]); off += 2
-	answer.Class = binary.BigEndian.Uint16(b[off : off+2]); off += 2
-	answer.TTL = binary.BigEndian.Uint32(b[off : off+4]); off += 4
+	answer.Type = binary.BigEndian.Uint16(b[off : off+2])
+	off += 2
+	answer.Class = binary.BigEndian.Uint16(b[off : off+2])
+	off += 2
+	answer.TTL = binary.BigEndian.Uint32(b[off : off+4])
+	off += 4
 
-	a_rdlength := binary.BigEndian.Uint16(b[off : off+2]); off += 2
+	a_rdlength := binary.BigEndian.Uint16(b[off : off+2])
+	off += 2
 
 	rdataStart := off
 	rdataEnd := off + int(a_rdlength)
@@ -94,25 +96,26 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 }
 
 func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[string]int, error) {
+	ansStart := len(pkt)
 
 	pkt, names, _ = BuildNameCompressed(pkt, a.Name, names)
 
-	qtype := []byte{byte(a.Type >> 8), byte(a.Type)}
-	pkt = append(pkt, qtype...)
+	pkt = append(pkt, byte(a.Type>>8), byte(a.Type))
 
-	qclass := []byte{byte(a.Class >> 8), byte(a.Class)}
-	pkt = append(pkt, qclass...)
+	pkt = append(pkt, byte(a.Class>>8), byte(a.Class))
 
-	qttl := uint16(a.TTL)
-	pkt = append(pkt, byte(qttl))
+	pkt = append(pkt, byte(a.TTL>>24), byte(a.TTL>>16), byte(a.TTL>>8), byte(a.TTL))
 
-	qrdl := []byte{byte(a.RDLength >> 8), byte(a.RDLength)}
-	pkt = append(pkt, qrdl...)
+	pkt = append(pkt, byte(a.RDLength>>8), byte(a.RDLength))
 
+	switch a.Type {
+	case 2, 5, 12, 15, 33, 6: // NS, CNAME, PTR, MX, SRV, SOA
+		return pkt, names, fmt.Errorf("name-bearing RDATA not supported yet")
+	}
 	pkt = append(pkt, a.RData...)
 
 	// Check if it can be decoded
-	_, _, err := ParseAnswer(pkt, len(pkt))
+	_, _, err := ParseAnswer(pkt, ansStart)
 	if err != nil {
 		return pkt, names, fmt.Errorf("packet check failed: %v", err)
 	}
@@ -130,7 +133,7 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 
 	for i := 0; i < len(a_pkt.Questions); i++ {
 		pkt, compression_values, err = BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
-		if err != nil{
+		if err != nil {
 			fmt.Println("error while building answer packet, could not build question: ", err)
 		}
 	}
