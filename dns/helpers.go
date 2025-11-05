@@ -8,7 +8,8 @@ import (
 
 const DNSHeaderSize = 12
 
-func ParseName(msg []byte, off int) (string, int, error) {
+func ParseName(msg []byte, off int) (domainName string, offset int, err error) {
+	
 	var labels []string
 	start := off
 	jumped := false
@@ -24,6 +25,7 @@ func ParseName(msg []byte, off int) (string, int, error) {
 			if off+1 >= len(msg) {
 				return "", 0, fmt.Errorf("truncated pointer")
 			}
+
 			pointer := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
 			if pointer >= len(msg) {
 				return "", 0, fmt.Errorf("bad ptr %d", pointer)
@@ -32,16 +34,13 @@ func ParseName(msg []byte, off int) (string, int, error) {
 			if !jumped {
 				// original message continues after the pointer
 				start = off +2
+				
+				// mark that we followed a pointer
 				jumped = true
 			}
-			// read 14-bit offset (first 2 bits are pointer indicator)
-			//pointer := int(binary.BigEndian.Uint16(msg[off:off+2]) & 0x3FFF)
 
 			// move to pointer target
 			off = pointer
-
-			// mark that we followed a pointer
-			
 			continue
 		}
 
@@ -73,14 +72,14 @@ func ParseName(msg []byte, off int) (string, int, error) {
 	return name, start, nil
 }
 
-func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte, map[string]int, int) {
+func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte, int) {
 	//fmt.Println("Got map: ", names)
 
 	name = strings.TrimSuffix(name, ".")
 	if name == "" {
 		start := len(pkt)
 		pkt = append(pkt, 0)
-		return pkt, names, start
+		return pkt, start
 	}
 
 	labels := strings.Split(name, ".")
@@ -122,5 +121,5 @@ func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte,
 		names[name] = start
 	}
 
-	return pkt, names, start
+	return pkt, start
 }

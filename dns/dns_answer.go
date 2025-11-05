@@ -95,10 +95,10 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 	return answer, rdataEnd, nil
 }
 
-func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[string]int, error) {
+func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, error) {
 	ansStart := len(pkt)
 
-	pkt, names, _ = BuildNameCompressed(pkt, a.Name, names)
+	pkt, _ = BuildNameCompressed(pkt, a.Name, names)
 
 	pkt = append(pkt, byte(a.Type>>8), byte(a.Type))
 
@@ -114,7 +114,7 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[str
 		// Roll back
 		pkt = pkt[:ansStart]
 
-		return pkt, names, fmt.Errorf("name-bearing RDATA not supported yet")
+		return pkt, fmt.Errorf("name-bearing RDATA not supported yet")
 	}
 	pkt = append(pkt, a.RData...)
 
@@ -125,10 +125,10 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, map[str
 		// Roll back
 		pkt = pkt[:ansStart]
 
-		return pkt, names, fmt.Errorf("packet check failed: %v", err)
+		return pkt, fmt.Errorf("packet check failed: %v", err)
 	}
 
-	return pkt, names, nil
+	return pkt, nil
 }
 
 func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
@@ -139,7 +139,7 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 	var err error
 
 	for i := 0; i < len(a_pkt.Questions); i++ {
-		pkt, compression_values, err = BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
+		pkt, err = BuildQuestion(pkt, a_pkt.Questions[i], compression_values)
 		if err != nil {
 			fmt.Println("error while building answer packet, could not build question: ", err)
 		}
@@ -147,7 +147,7 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 
 	anCount := 0
 	for i := 0; i < len(a_pkt.Answers); i++ {
-		pkt, compression_values, err = BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
+		pkt, err = BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
 		if err != nil {
 			fmt.Println("error while building answer packet, could not build answer: ", err)
 		}else{

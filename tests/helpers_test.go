@@ -86,7 +86,7 @@ func TestBuildNameCompressed(t *testing.T) {
 				names[k] = v
 			}
 
-			pkt2, names2, start := dns.BuildNameCompressed(pkt, tt.input, names)
+			pkt2, start := dns.BuildNameCompressed(pkt, tt.input, names)
 			if start < 0 || start >= len(pkt2) {
 				t.Fatalf("bad start offset: %d len=%d", start, len(pkt2))
 			}
@@ -104,12 +104,12 @@ func TestBuildNameCompressed(t *testing.T) {
 			}
 
 			// Offsets recorded at length bytes
-			if _, ok := names2[tt.input]; !ok {
+			if _, ok := names[tt.input]; !ok {
 				t.Fatalf("full name offset not recorded")
 			}
 			// For the compressed case, unmatched prefix suffixes should be recorded.
 			if strings.HasPrefix(tt.name, "compressed") {
-				if _, ok := names2["mail.google.com"]; !ok {
+				if _, ok := names["mail.google.com"]; !ok {
 					t.Fatalf("suffix offset for 'mail.google.com' not recorded")
 				}
 			}

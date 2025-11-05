@@ -58,9 +58,9 @@ func ParseQuestion(b []byte, start int) (DNSQuestion, int, error) {
 	return question, off + 4, nil
 }
 
-func BuildQuestion(pkt []byte, q DNSQuestion, names map[string]int) ([]byte, map[string]int, error) {
+func BuildQuestion(pkt []byte, q DNSQuestion, names map[string]int) ([]byte, error) {
 
-	pkt, names, _ = BuildNameCompressed(pkt, q.Name, names)
+	pkt, _ = BuildNameCompressed(pkt, q.Name, names)
 
 	qtype := []byte{byte(q.Type >> 8), byte(q.Type)}
 	pkt = append(pkt, qtype...)
@@ -68,5 +68,5 @@ func BuildQuestion(pkt []byte, q DNSQuestion, names map[string]int) ([]byte, map
 	qclass := []byte{byte(q.Class >> 8), byte(q.Class)}
 	pkt = append(pkt, qclass...)
 
-	return pkt, names, nil
+	return pkt, nil
 }

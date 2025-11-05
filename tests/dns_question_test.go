@@ -22,7 +22,7 @@ func TestBuildQuestion(t *testing.T) {
 	}
 	names := make(map[string]int)
 
-	pkt, _, err := dns.BuildQuestion(pkt, q, names)
+	pkt, err := dns.BuildQuestion(pkt, q, names)
 	if err != nil {
 		t.Fatalf("BuildQuestion failed: %v", err)
 	}
