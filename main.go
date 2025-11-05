@@ -22,7 +22,7 @@ func main() {
 		return
 	}
 
-	
+	defer s_conn.Close()
 
 	buffer := make([]byte, 4096)
 	for {
@@ -86,6 +86,4 @@ func main() {
 
 		}(q, addr)
 	}
-
-	_ = s_conn.Close()
 }
