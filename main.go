@@ -22,7 +22,7 @@ func main() {
 		return
 	}
 
-	defer s_conn.Close()
+	
 
 	buffer := make([]byte, 4096)
 	for {
@@ -34,7 +34,7 @@ func main() {
 		}
 
 		question, err := dns.ParseQuestionPacket(buffer[:n], n)
-		if err != nil{
+		if err != nil {
 			fmt.Println("error parsing question from client: ", err)
 		}
 
@@ -48,11 +48,14 @@ func main() {
 		// Start gorouttine for answeing so we dont block
 		go func(q []byte, addr *net.UDPAddr) {
 			// Create client here so every routine gets it own reply
-			client, err := net.ResolveUDPAddr("udp4", "9.9.9.9:53")
-			c_conn, err := net.DialUDP("udp4", nil, client)
+			client, _ := net.ResolveUDPAddr("udp4", "9.9.9.9:53")
+			c_conn, _ := net.DialUDP("udp4", nil, client)
 
 			// Set deadline for sending request and send request
-			c_conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+			err := c_conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+			if err != nil {
+				fmt.Println("failed setting write deadline")
+			}
 			if _, err := c_conn.Write(q); err != nil {
 				return
 			}
@@ -66,21 +69,23 @@ func main() {
 				fmt.Println("SERVFAIL")
 				return
 			}
-			
-			c_conn.Close()
+
+			_ = c_conn.Close()
 			answer, err := dns.ParseAnswerPacket(ans[:n2], n2)
-			if err != nil{
+			if err != nil {
 				fmt.Println("error parsing answer from client: ", err)
 			}
-			
-			fmt.Println("Upstream: ", ans[:n2])
+
+			fmt.Println("Upstream: ", string(ans[:n2]))
 			debug, _ := dns.BuildAnswerPaket(answer)
-			fmt.Println("Own: ", debug)
-			
+			fmt.Println("Own: ", string(debug))
+
 			fmt.Println("A: Questions:", len(answer.Questions), " Answers:", len(answer.Answers))
 
 			_, _ = s_conn.WriteToUDP(ans[:n2], addr)
-			
+
 		}(q, addr)
 	}
+
+	_ = s_conn.Close()
 }
