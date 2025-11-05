@@ -131,7 +131,7 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, error) 
 	return pkt, nil
 }
 
-func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
+func BuildAnswerPacket(a_pkt DNSAnswerPacket) ([]byte, error) {
 
 	// Reserve 12 for the header
 	pkt := make([]byte, 12, 4096)
@@ -150,7 +150,7 @@ func BuildAnswerPaket(a_pkt DNSAnswerPacket) ([]byte, error) {
 		pkt, err = BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
 		if err != nil {
 			fmt.Println("error while building answer packet, could not build answer: ", err)
-		}else{
+		} else {
 			anCount++
 		}
 	}

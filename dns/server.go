@@ -66,7 +66,7 @@ func ProcessQuestion(q []byte, connection *net.UDPConn, cAddr *net.UDPAddr) {
 	}
 
 	// DEBUG ---
-	BuildAnswerPaket(answer)
+	BuildAnswerPacket(answer)
 
 	log.Debug().Msg("A: Questions:" + string(len(answer.Questions)) + " Answers:" + string(len(answer.Answers)))
 	// ---
