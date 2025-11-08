@@ -77,6 +77,7 @@ Designed for learning how DNS works at the packet level — parsing headers, han
 [Simple DNS Client by Alan Mislove](https://mislove.org/teaching/cs4700/spring11/handouts/project1-primer.pdf)
 [Create a TCP and UDP Client and Server using Go](https://www.linode.com/docs/guides/developing-udp-and-tcp-clients-and-servers-in-go/)
 [(Video) Bitwise Operators by Alex Hyett](https://www.youtube.com/watch?v=igIjGxF2J-w)
+[RFC1035](https://www.rfc-editor.org/rfc/rfc1035.html)
 
 ---
 
