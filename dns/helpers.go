@@ -72,6 +72,7 @@ func ParseName(msg []byte, off int) (domainName string, offset int, err error) {
 	return name, start, nil
 }
 
+// Appends a compressed name to the end of the packet using names as compression map
 func BuildNameCompressed(pkt []byte, name string, names map[string]int) ([]byte, int) {
 	//fmt.Println("Got map: ", names)
 

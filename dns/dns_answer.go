@@ -9,6 +9,7 @@ type DNSAnswerPacket struct {
 	Header    DNSHeader
 	Questions []DNSQuestion
 	Answers   []DNSAnswer
+	Raw       []byte
 }
 
 type DNSAnswer struct {
@@ -21,12 +22,12 @@ type DNSAnswer struct {
 }
 
 func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
-	q_pkt := DNSAnswerPacket{}
+	a_pkt := DNSAnswerPacket{}
 	msg := b[:n]
 
 	header, h_err := ParseHeader(msg)
 	if h_err != nil {
-		return q_pkt, fmt.Errorf("enountered error while parsing header: %v", h_err)
+		return a_pkt, fmt.Errorf("enountered error while parsing header: %v", h_err)
 	}
 
 	off := DNSHeaderSize
@@ -35,7 +36,7 @@ func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
 	for i := 0; i < int(header.QDCount); i++ {
 		q, q_off, q_err := ParseQuestion(msg, off)
 		if q_err != nil {
-			return q_pkt, fmt.Errorf("enountered error while parsing question: %v", q_err)
+			return a_pkt, fmt.Errorf("enountered error while parsing question: %v", q_err)
 		}
 		questions = append(questions, q)
 		off = q_off
@@ -46,21 +47,22 @@ func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
 	for i := 0; i < int(header.ANCount); i++ {
 		a, a_off, a_err := ParseAnswer(msg, off)
 		if a_err != nil {
-			return q_pkt, fmt.Errorf("enountered error while parsing answer: %v", a_err)
+			return a_pkt, fmt.Errorf("enountered error while parsing answer: %v", a_err)
 		}
 		answers = append(answers, a)
 		off = a_off
 	}
 
 	if int(header.ANCount) != len(answers) {
-		return q_pkt, fmt.Errorf("answer lengths dont match")
+		return a_pkt, fmt.Errorf("answer lengths dont match")
 	}
 
-	q_pkt.Header = header
-	q_pkt.Questions = questions
-	q_pkt.Answers = answers
+	a_pkt.Header = header
+	a_pkt.Questions = questions
+	a_pkt.Answers = answers
+	a_pkt.Raw = b
 
-	return q_pkt, nil
+	return a_pkt, nil
 }
 
 func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
@@ -95,7 +97,7 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 	return answer, rdataEnd, nil
 }
 
-func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, error) {
+func BuildAnswer(pkt []byte, raw []byte, a DNSAnswer, names map[string]int) ([]byte, error) {
 	ansStart := len(pkt)
 
 	pkt, _ = BuildNameCompressed(pkt, a.Name, names)
@@ -108,18 +110,16 @@ func BuildAnswer(pkt []byte, a DNSAnswer, names map[string]int) ([]byte, error) 
 
 	pkt = append(pkt, byte(a.RDLength>>8), byte(a.RDLength))
 
-	switch a.Type {
-	case 2, 5, 12, 15, 33, 6: // NS, CNAME, PTR, MX, SRV, SOA
-
+	pkt, err := BuildRdata(pkt, raw, a.Type, len(pkt), a.RDLength, names)
+	if err != nil{
 		// Roll back
 		pkt = pkt[:ansStart]
 
-		return pkt, fmt.Errorf("name-bearing RDATA not supported yet")
+		return pkt, fmt.Errorf("error building rdata %v", err)
 	}
-	pkt = append(pkt, a.RData...)
 
 	// Check if it can be decoded
-	_, _, err := ParseAnswer(pkt, ansStart)
+	_, _, err = ParseAnswer(pkt, ansStart)
 	if err != nil {
 
 		// Roll back
@@ -147,7 +147,7 @@ func BuildAnswerPacket(a_pkt DNSAnswerPacket) ([]byte, error) {
 
 	anCount := 0
 	for i := 0; i < len(a_pkt.Answers); i++ {
-		pkt, err = BuildAnswer(pkt, a_pkt.Answers[i], compression_values)
+		pkt, err = BuildAnswer(pkt, a_pkt.Raw, a_pkt.Answers[i], compression_values)
 		if err != nil {
 			fmt.Println("error while building answer packet, could not build answer: ", err)
 		} else {

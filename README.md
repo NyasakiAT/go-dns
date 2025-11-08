@@ -78,6 +78,7 @@ Designed for learning how DNS works at the packet level — parsing headers, han
 [Create a TCP and UDP Client and Server using Go](https://www.linode.com/docs/guides/developing-udp-and-tcp-clients-and-servers-in-go/)
 [(Video) Bitwise Operators by Alex Hyett](https://www.youtube.com/watch?v=igIjGxF2J-w)
 [RFC1035](https://www.rfc-editor.org/rfc/rfc1035.html)
+[RFC2782](https://www.rfc-editor.org/rfc/rfc2782)
 
 ---
 
