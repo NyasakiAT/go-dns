@@ -30,7 +30,7 @@ func SetupConnection() (*net.UDPConn, error) {
 
 func ProcessQuestion(q DNSQuestionPacket, connection *net.UDPConn, cAddr *net.UDPAddr, cache *ristretto.Cache[string, CacheEntry], stats *metrics.Stats) {
 	answers := CacheRetrieve(q, cache)
-	ans := make([]byte, 4096)
+	ans := make([]byte, 0)
 	names := make(map[string]int)
 
 	if len(answers) > 1 {
@@ -57,8 +57,13 @@ func ProcessQuestion(q DNSQuestionPacket, connection *net.UDPConn, cAddr *net.UD
 		answer.Questions = append([]DNSQuestion{}, q.Question)
 		answer.Header = header
 
-		ans, _ = BuildAnswerPacket(answer)
-
+		a_pkt, err := BuildAnswerPacket(answer)
+		if err != nil {
+			log.Error().Msg("failed to rbuild answer packet '" + err.Error() + "'")
+			stats.UpstreamErr.Add(1)
+			return
+		}
+		ans = append(ans, a_pkt...)
 		stats.CacheHits.Add(1)
 
 	} else {
@@ -137,6 +142,9 @@ func StartServer(stats *metrics.Stats) error {
 			BufferItems: 64,
 		},
 	)
+	if err != nil {
+		log.Error().Msg("failed to add to cache '" + err.Error() + "'")
+	}
 
 	udpConn, err := SetupConnection()
 	if err != nil {

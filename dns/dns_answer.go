@@ -18,7 +18,7 @@ type DNSAnswer struct {
 	Class    uint16
 	TTL      uint32
 	RDLength uint16
-	RData    []byte
+	RData RData // tagged payload below
 }
 
 func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
@@ -60,7 +60,7 @@ func ParseAnswerPacket(b []byte, n int) (DNSAnswerPacket, error) {
 	a_pkt.Header = header
 	a_pkt.Questions = questions
 	a_pkt.Answers = answers
-	a_pkt.Raw = b
+	a_pkt.Raw = msg
 
 	return a_pkt, nil
 }
@@ -92,7 +92,10 @@ func ParseAnswer(b []byte, start int) (DNSAnswer, int, error) {
 	}
 
 	answer.RDLength = a_rdlength
-	answer.RData = b[rdataStart:rdataEnd]
+	answer.RData, err = ParseRdata(b, rdataStart, answer.RDLength, answer.Type)
+	if err != nil {
+		return answer, 0, fmt.Errorf("error parsing rdata %v", err)
+	}
 
 	return answer, rdataEnd, nil
 }
@@ -108,9 +111,9 @@ func BuildAnswer(pkt []byte, raw []byte, a DNSAnswer, names map[string]int) ([]b
 
 	pkt = append(pkt, byte(a.TTL>>24), byte(a.TTL>>16), byte(a.TTL>>8), byte(a.TTL))
 
-	pkt = append(pkt, byte(a.RDLength>>8), byte(a.RDLength))
+	pkt = append(pkt, byte(a.RDLength>>8), byte(a.RDLength)) //Might need to calculate this myself at some point
 
-	pkt, err := BuildRdata(pkt, raw, a.Type, len(pkt), a.RDLength, names)
+	pkt, err := BuildRdata(pkt, a.RData, a.Type, names)
 	if err != nil{
 		// Roll back
 		pkt = pkt[:ansStart]
