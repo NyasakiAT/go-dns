@@ -22,7 +22,6 @@ func main() {
                 "cache_misses": stats.CacheMisses.Load(),
                 "up_ok":        stats.UpstreamOK.Load(),
                 "up_err":       stats.UpstreamErr.Load(),
-                "serve_stale":  stats.ServeStale.Load(),
             })
         })
         _ = http.ListenAndServe(":8081", nil)

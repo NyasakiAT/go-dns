@@ -8,7 +8,6 @@ type Stats struct {
     CacheMisses  atomic.Uint64
     UpstreamOK   atomic.Uint64
     UpstreamErr  atomic.Uint64
-    ServeStale   atomic.Uint64
 }
 
 func (s *Stats) Snapshot() map[string]uint64 {
@@ -17,6 +16,5 @@ func (s *Stats) Snapshot() map[string]uint64 {
         "cache_misses": s.CacheMisses.Load(),
         "up_ok":        s.UpstreamOK.Load(),
         "up_err":       s.UpstreamErr.Load(),
-        "serve_stale":  s.ServeStale.Load(),
     }
 }
