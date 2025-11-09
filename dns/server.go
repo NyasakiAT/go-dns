@@ -66,7 +66,6 @@ func ServeFromCache(q DNSQuestionPacket, conn *net.UDPConn, cAddr *net.UDPAddr,
 		return false
 	}
 	_, _ = conn.WriteToUDP(wire, cAddr)
-	stats.CacheHits.Add(1)
 	return true
 }
 
@@ -186,8 +185,10 @@ func StartServer(stats *metrics.Stats) error {
 
 		// try cache
 		if ServeFromCache(q, udpConn, cAddr, cache, stats) {
+			stats.CacheHits.Add(1)
 			continue
 		}
+		stats.CacheMisses.Add(1)
 
 		// ID remap + pending bookkeeping
 		orig := binary.BigEndian.Uint16(pkt[:2])
