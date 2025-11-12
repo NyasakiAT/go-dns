@@ -24,9 +24,9 @@ Designed for learning how DNS works at the packet level — parsing headers, han
 ### 🧠 Caching Layer
 **Goal:** reduce upstream lookups and improve response speed.
 
-- [ ] Implement an in-memory cache using `sync.Map` or LRU.
-- [ ] Cache key: `(QNAME, QTYPE, QCLASS, DO-bit)`.
-- [ ] Respect DNS TTLs: store expiry timestamp and auto-expire entries.
+- [x] Implement an in-memory cache using `sync.Map` or LRU.
+- [x] Cache key: `(QNAME, QTYPE, QCLASS, DO-bit)`.
+- [x] Respect DNS TTLs: store expiry timestamp and auto-expire entries.
 - [ ] Rewrite transaction ID when serving cached responses.
 - [ ] Add optional persistent cache (Ideally redis?)
 

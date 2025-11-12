@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type pendEntry struct {
+type PendEntry struct {
 	addr  *net.UDPAddr
 	orig  uint16
 	key   string // cache key for this query
@@ -21,10 +21,10 @@ type pendEntry struct {
 	inUse uint32
 }
 
-var pending [65536]pendEntry
+var pending [65536]PendEntry
 var idCursor uint32 // atomically incremented
 
-func freeUpID(id uint16) { atomic.StoreUint32(&pending[id].inUse, 0) }
+//func freeUpID(id uint16) { atomic.StoreUint32(&pending[id].inUse, 0) }
 
 func allocUpID(now int64) (uint16, bool) {
 	for i := 0; i < 1024; i++ {

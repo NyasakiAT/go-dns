@@ -26,7 +26,7 @@ func CacheRetrieve(q DNSQuestionPacket, cache *ristretto.Cache[string, CacheEntr
 	return nil
 }
 
-func CachePut(q DNSQuestionPacket, a DNSAnswerPacket, cache *ristretto.Cache[string, CacheEntry]) {
+/* func CachePut(q DNSQuestionPacket, a DNSAnswerPacket, cache *ristretto.Cache[string, CacheEntry]) {
 	if len(a.Answers) < 1 {
 		log.Error().Msg("Tried to add empty answers to cache")
 		return
@@ -37,7 +37,7 @@ func CachePut(q DNSQuestionPacket, a DNSAnswerPacket, cache *ristretto.Cache[str
 	ttl := time.Duration(a.Answers[0].TTL) * time.Second
 	entry := CacheEntry{Records: a.Answers, Expiry: time.Now().Add(ttl)}
 	cache.SetWithTTL(key, entry, 1, ttl)
-}
+} */
 
 func CachePutKey(key string, a DNSAnswerPacket, cache *ristretto.Cache[string, CacheEntry]) {
 	if len(a.Answers) == 0 {

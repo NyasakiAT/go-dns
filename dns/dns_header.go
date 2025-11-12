@@ -16,7 +16,7 @@ type DNSHeader struct {
 	QDCount, ANCount, NSCount, ARCount uint16
 }
 
-// Parses the header section of the packet
+// ParseHeader Parses the header section of the packet
 func ParseHeader(b []byte) (DNSHeader, error) {
 
 	if len(b) < DNSHeaderSize {
@@ -48,7 +48,7 @@ func ParseHeader(b []byte) (DNSHeader, error) {
 // Build the header packet from the DNSHeader struct
 func BuildHeader(header DNSHeader) []byte {
 	flags := uint16(0)
-	
+
 	if header.QR {
 		flags |= 1 << 15
 	}
@@ -65,7 +65,7 @@ func BuildHeader(header DNSHeader) []byte {
 	if header.RA {
 		flags |= 1 << 7
 	}
-	
+
 	flags |= (uint16(header.Z) & 7) << 4
 	flags |= uint16(header.RCode) & 15
 
@@ -76,6 +76,6 @@ func BuildHeader(header DNSHeader) []byte {
 	binary.BigEndian.PutUint16(out[6:8], header.ANCount)
 	binary.BigEndian.PutUint16(out[8:10], header.NSCount)
 	binary.BigEndian.PutUint16(out[10:12], header.ARCount)
-	
+
 	return out
 }
