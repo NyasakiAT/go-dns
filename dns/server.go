@@ -38,14 +38,7 @@ func allocUpID(now int64) (uint16, bool) {
 	return 0, false
 }
 
-func ServeFromCache(q DNSQuestionPacket, conn *net.UDPConn, cAddr *net.UDPAddr,
-	cache *ristretto.Cache[string, CacheEntry], stats *metrics.Stats) bool {
-
-	answers := CacheRetrieve(q, cache)
-	if len(answers) == 0 {
-		return false
-	}
-
+/*
 	hdr := DNSHeader{
 		ID:      q.Header.ID,
 		QR:      true,
@@ -60,12 +53,40 @@ func ServeFromCache(q DNSQuestionPacket, conn *net.UDPConn, cAddr *net.UDPAddr,
 		NSCount: 0,
 		ARCount: 0,
 	}
-	resp := DNSAnswerPacket{Header: hdr, Questions: []DNSQuestion{q.Question}, Answers: answers}
-	wire, err := BuildAnswerPacket(resp)
+
+resp := DNSAnswerPacket{Header: hdr, Questions: []DNSQuestion{q.Question}, Answers: answers}
+wire, err := BuildAnswerPacket(resp)
+
 	if err != nil {
 		return false
 	}
-	_, _ = conn.WriteToUDP(wire, cAddr)
+*/
+func ServeFromCache(
+	q DNSQuestionPacket,
+	conn *net.UDPConn,
+	cAddr *net.UDPAddr,
+	cache *ristretto.Cache[string, CacheEntry],
+	stats *metrics.Stats,
+) bool {
+	rawPkt := CacheRetrieve(q, cache)
+	if len(rawPkt) < 2 {
+		return false
+	}
+
+	// copy cached packet so we don’t mutate shared memory
+	pkt := make([]byte, len(rawPkt))
+	copy(pkt, rawPkt)
+
+	// patch ID for this client
+	binary.BigEndian.PutUint16(pkt[:2], q.Header.ID)
+
+	_, err := conn.WriteToUDP(pkt, cAddr)
+	if err != nil {
+		// optional: stats + log
+		return false
+	}
+
+	stats.CacheHits.Add(1)
 	return true
 }
 

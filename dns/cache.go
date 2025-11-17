@@ -10,16 +10,16 @@ import (
 )
 
 type CacheEntry struct {
-	Records []DNSAnswer
+	RawPkt []byte
 	Expiry  time.Time
 }
 
-func CacheRetrieve(q DNSQuestionPacket, cache *ristretto.Cache[string, CacheEntry]) (answers []DNSAnswer) {
+func CacheRetrieve(q DNSQuestionPacket, cache *ristretto.Cache[string, CacheEntry]) (answers []byte) {
 	key := fmt.Sprintf("%s|%d|%d", strings.ToLower(q.Question.Name), q.Question.Type, q.Question.Class)
 	if v, found := cache.Get(key); found {
 		entry := v
 		if time.Now().Before(entry.Expiry) {
-			return entry.Records
+			return entry.RawPkt
 		}
 	}
 
@@ -44,7 +44,8 @@ func CachePutKey(key string, a DNSAnswerPacket, cache *ristretto.Cache[string, C
 		log.Error().Msg("Tried to add empty answers to cache")
 		return
 	}
+	rawPkt, _ := BuildAnswerPacket(a)
 	ttl := time.Duration(a.Answers[0].TTL) * time.Second
-	entry := CacheEntry{Records: a.Answers, Expiry: time.Now().Add(ttl)}
+	entry := CacheEntry{RawPkt: rawPkt, Expiry: time.Now().Add(ttl)}
 	cache.SetWithTTL(key, entry, 1, ttl)
 }
